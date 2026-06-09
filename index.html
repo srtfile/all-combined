@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stream Extractor Runner</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0d1117; --panel:#161b22; --line:#30363d; --text:#c9d1d9; --muted:#8b949e; --blue:#1f6feb; --green:#2ea043; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial; background: radial-gradient(circle at top, #12213b, var(--bg) 45%); color: var(--text); }
+    main { max-width: 980px; margin: 0 auto; padding: 44px 18px; }
+    .card { background: rgba(22,27,34,.94); border: 1px solid var(--line); border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.28); }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 48px); letter-spacing: -0.04em; }
+    p { color: var(--muted); line-height: 1.6; }
+    label { display:block; margin: 20px 0 8px; color: #f0f6fc; font-weight: 700; }
+    input, textarea { width: 100%; border:1px solid var(--line); background:#0d1117; color:var(--text); border-radius: 12px; padding: 12px 14px; font: 14px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    textarea { min-height: 190px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .actions { display:flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    button, a.button { appearance:none; border:0; border-radius: 12px; padding: 12px 16px; color: white; background: var(--blue); font-weight: 800; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap: 8px; }
+    button.secondary, a.secondary { background:#30363d; }
+    button.green { background: var(--green); }
+    .note { margin-top: 16px; padding: 12px 14px; border: 1px solid #3b434e; border-radius: 12px; background:#0d1117; }
+    code { background:#0d1117; border:1px solid #30363d; padding:2px 6px; border-radius:6px; }
+    @media (max-width:720px){ .row{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <h1>Stream Extractor Runner</h1>
+    <p>This static page cannot run Python directly. It creates a GitHub issue that triggers the repository's <code>Run extractor</code> GitHub Actions workflow. The workflow posts results back as an issue comment and saves a downloadable artifact.</p>
+
+    <div class="row">
+      <div>
+        <label for="owner">GitHub owner</label>
+        <input id="owner" placeholder="your-username" />
+      </div>
+      <div>
+        <label for="repo">Repository name</label>
+        <input id="repo" placeholder="stream-extractor-github" />
+      </div>
+    </div>
+
+    <label for="urls">URLs, one per line</label>
+    <textarea id="urls" placeholder="https://example.com/embed/abc123"></textarea>
+
+    <div class="actions">
+      <button class="green" id="issueBtn">Create run issue</button>
+      <a class="button secondary" id="actionsLink" href="#" target="_blank" rel="noreferrer">Open Actions tab</a>
+    </div>
+
+    <div class="note">
+      <strong>Private data warning:</strong> issues and comments are public in a public repo. Use a private repo if your URLs should stay private. Use only media URLs you own or have permission to process.
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const savedOwner = localStorage.getItem('repoOwner') || '';
+const savedRepo = localStorage.getItem('repoName') || 'stream-extractor-github';
+$('owner').value = savedOwner;
+$('repo').value = savedRepo;
+
+function repoPath() {
+  const owner = $('owner').value.trim();
+  const repo = $('repo').value.trim();
+  localStorage.setItem('repoOwner', owner);
+  localStorage.setItem('repoName', repo);
+  return { owner, repo };
+}
+
+function updateActionsLink() {
+  const { owner, repo } = repoPath();
+  $('actionsLink').href = owner && repo ? `https://github.com/${owner}/${repo}/actions/workflows/extract.yml` : '#';
+}
+$('owner').addEventListener('input', updateActionsLink);
+$('repo').addEventListener('input', updateActionsLink);
+updateActionsLink();
+
+$('issueBtn').addEventListener('click', () => {
+  const { owner, repo } = repoPath();
+  const urls = $('urls').value.trim();
+  if (!owner || !repo) return alert('Enter GitHub owner and repository name first.');
+  if (!urls) return alert('Paste at least one URL.');
+  const title = '[extract] Run stream extraction';
+  const body = `Paste URLs below. The GitHub Action will parse every http(s) URL in this issue.\n\n${urls}`;
+  const target = `https://github.com/${owner}/${repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+  window.open(target, '_blank', 'noopener,noreferrer');
+});
+</script>
+</body>
+</html>
